@@ -7,9 +7,7 @@ import random
 from pprint import pprint
 
 import datetime
-default_date = datetime.datetime(2023,5,31)
-
-default_delta = 24 * 3600
+from constants import default_date, default_delta
 
 def choose_one(array):
 	if len(array) == 0:

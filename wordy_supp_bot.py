@@ -8,7 +8,7 @@ bot = telebot.TeleBot(TOKEN, parse_mode=None) # You can set parse_mode by defaul
 from decider import Decider
 decider = Decider('test.db')
 
-from colors import bcolors as bf
+from constants import bcolors as bf
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):

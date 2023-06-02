@@ -5,7 +5,7 @@ from pprint import pprint
 
 import threading
 
-from colors import bcolors as bf
+from constants import bcolors as bf
 
 import telebot
 from secrets import MAIN_TOKEN as TOKEN

@@ -4,26 +4,7 @@ import os
 
 from pprint import pprint
 
-from colors import bcolors as bf
-
-test_words = [
-	{
-		'word': "COALESCENCE",
-		'translation': "the process in which speech sounds are joined together because someone is talking fast",
-		'examples': ["The \_\_\_ of two black holes -- a very violent and exotic event -- is one of the most sought-after observations of modern astronomy."]
-	},
-	{
-		'word': "CONFINE",
-		'translation': "to restrict",
-		'examples': ["please confine yourself to a conversation topic", "the audience attention was confined to slides"]
-		
-	},
-	{
-		'word': "COAST",
-		'translation': "shore",
-		'examples': []
-	}
-]
+from constants import bcolors as bf
 
 class SQL:
 

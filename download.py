@@ -2,7 +2,7 @@ import subprocess
 
 from pprint import pprint
 
-from secrets import SCRIPT
+from constants import SCRIPT
 
 def process_example(word, e):
 	def f(v):
