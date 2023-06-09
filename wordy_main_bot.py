@@ -15,6 +15,9 @@ bot = telebot.TeleBot(TOKEN, parse_mode=None) # You can set parse_mode by defaul
 from decider import Decider
 decider = Decider('test.db')
 
+from bureau import Bureau
+bureau = Bureau('test.db')
+
 mode_to_word = {
 	'E': 'EASY',
 	'M': 'MEDIUM',
@@ -29,10 +32,12 @@ mode_to_color = {
 	'R': bf.FAIL
 }	
 
+
+
 def user_secret_handler(message):
 	chat_id_alt = message.chat.id
 	secret = message.text
-	status, chat_id = decider.register_user_alt(chat_id_alt, secret)
+	status, chat_id = bureau.inscrire_user_alt(chat_id_alt, secret)
 	bot.send_message(chat_id_alt, f"ID {chat_id_alt}: {status}.\nPaired with ID: {chat_id}")
 
 @bot.message_handler(commands=['start'])
@@ -55,15 +60,16 @@ def log_user_opinion(chat_id_alt, word, mode):
 @bot.callback_query_handler(func=lambda call: True)
 def handle_call(call):
 	chat_id_alt = call.message.chat.id
-	mode, word, delta, verdict = call.data.split('#')
+	mode, word, delta, verdict, chat_id = call.data.split('#')
 	log_user_opinion(chat_id_alt, word, mode)
 	delta = int(delta)
+	chat_id = int(chat_id)
 	record = {'word' : word, 'delta': delta}
 	if mode == 'R':
-		decider.remove_word(chat_id_alt, word)
+		bureau.remove_word(chat_id, word)
 		text = f'word {word} removed'
 	else:
-		delta = decider.update_queue(chat_id_alt, record, verdict, mode=mode)
+		delta = bureau.update_queue(chat_id_alt, record, verdict, mode=mode)
 		text = f'CORRECT+' + mode_to_word[mode] if verdict == 'C' else f'INCORRECT.\nanswer={word}'
 		text = text + f'\nnext check in {delta // 86400} day(s)'
 	try:
@@ -88,15 +94,15 @@ def user_reply_handler(message, record):
 	user_answer = message.text.upper()
 	log_user_answer(chat_id_alt, user_answer, word)
 	verdict = 'C' if user_answer == word else 'I'
-	delta = decider.update_queue(chat_id, record, verdict)
+	delta = bureau.update_queue(chat_id, record, verdict)
 	text = f'CORRECT.' if verdict == 'C' else f'INCORRECT.\nword={word}'
-	data = f"{word}#{str(delta)}#{verdict}"
+	data = f"{word}#{str(delta)}#{verdict}#{chat_id}"
 	try:
 		bot.send_message(chat_id, text, reply_markup=gen_markup(data))
 	except Exception as e:
 		print(e)
 	finally:
-		decider.unpend(chat_id_alt)
+		bureau.unpend(chat_id_alt)
 	
 
 # bot.edit_message_text(chat_id=CHAT_WITH_MESSAGE, text=NEW_TEXT, message_id=MESSAGE_TO_EDIT)	
@@ -112,9 +118,9 @@ def examine_word(chat_id_alt, record):
 		bot.register_next_step_handler(sent_msg, user_reply_handler, record)
 	except Exception as e:
 		print(e)	
-		decider.unpend(chat_id_alt)
+		bureau.unpend(chat_id_alt)
 		if 'bot was blocked by the user' in str(e):
-			decider.remove(chat_id_alt)
+			bureau.remove_user_alt(chat_id_alt)
 
 def bot_polling():
     bot.infinity_polling()
@@ -133,7 +139,7 @@ while True:
 			record = decider.get_word_for_id(chat_id)
 			if record is None:
 				continue
-			decider.pend(chat_id_alt)
+			bureau.pend(chat_id_alt)
 			examine_word(chat_id_alt, record)
 
 			

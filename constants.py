@@ -19,4 +19,7 @@ class bcolors:
     CBEIGE  = '\33[36m'
     CWHITE  = '\33[37m'
     
+def today():
+	return round(datetime.datetime.utcnow().timestamp() - default_date.timestamp())
+    
     
