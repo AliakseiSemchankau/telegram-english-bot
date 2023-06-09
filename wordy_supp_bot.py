@@ -20,8 +20,8 @@ def send_welcome(message):
 def add_word(message):
 	chat_id = message.chat.id
 	word = message.text.upper()
-	if not word.isalpha():
-		bot.reply_to(message, 'please give ONE word of LATIN letters only')
+	if not word.replace('-', '').isalpha():
+		bot.reply_to(message, 'please give ONE word of LATIN letters and hyphens only.\nwords with diacritics do not work (yet).')
 		return
 		
 	status, msg = decider.register_word(chat_id, word)

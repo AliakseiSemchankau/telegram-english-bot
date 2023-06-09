@@ -14,10 +14,23 @@ def choose_one(array):
 		return None
 	return array[random.randint(0, len(array) - 1)]
 
-def update_delta(delta):
+def next_delta(delta):
+	if delta == 0:
+		return 24 * 3600
 	if delta == 24 * 3600:
 		return 3 * 24 * 3600
 	return round(1.618 * delta)
+
+def update_delta(delta, mode='D'):
+	if mode == 'D':
+		return next_delta(delta)
+	elif mode == 'E':
+		return 3 * 24 * 3600 + next_delta(delta)
+	elif mode == 'M':
+		return 3 * 24 * 3600
+	else:
+		return 1 * 24 * 3600
+	
 
 def generate_secret(id):
 	secret = ''
@@ -28,7 +41,7 @@ def generate_secret(id):
 	return secret	
 
 def today():
-	return (datetime.datetime.utcnow() - default_date).seconds
+	return round(datetime.datetime.utcnow().timestamp() - default_date.timestamp())
 
 class Decider:
 
@@ -115,8 +128,8 @@ class Decider:
 		full_record = self.get_full_word_record(r)
 		return full_record
 
-	def update_queue(self, chat_id, record, verdict):
-		delta = default_delta if verdict == 'INCORRECT' else update_delta(record['delta'])
+	def update_queue(self, chat_id, record, verdict, mode='D'):
+		delta = default_delta if (verdict == 'I' and mode == 'D') else update_delta(record['delta'], mode=mode)
 		self.SQL.add_word(chat_id, record['word'], today(), delta)
 		return delta
 	
@@ -131,5 +144,9 @@ class Decider:
 		
 	def remove(self, chat_id_alt):
 		self.SQL.remove(chat_id_alt)
+		
+	def remove_word(self, chat_id_alt, word):
+		chat_id = self.get_chat_id(chat_id_alt)
+		self.SQL.remove_word(chat_id, word)
 
 		

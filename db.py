@@ -132,9 +132,13 @@ class SQL:
 		self.execute_query(query)
 		
 	def remove(self, chat_id_alt):
-		query = f'UPDATE  users SET CHAT_ID_ALT=0 WHERE CHAT_ID_ALT={chat_id_alt}'
+		query = f'UPDATE users SET CHAT_ID_ALT=0 WHERE CHAT_ID_ALT={chat_id_alt}'
 		self.execute_query(query)
-			      
+		
+	def remove_word(self, chat_id, word):
+		query = f'DELETE FROM user_words WHERE CHAT_ID={chat_id} AND WORD="{word}"'
+		self.execute_query(query)
+			       
 	# CHECKS
 	
 	def check_chat_id(self, chat_id):
