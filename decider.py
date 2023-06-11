@@ -4,6 +4,22 @@ import random
 
 from constants import today
 
+def obliterate_sentence(e, word):
+	if e is None:
+		return None
+	def f(v):
+		x = set(word.upper())
+		y = set(v.upper())
+		return len(x.intersection(y))**2 / ((len(x) + 1.0) * (len(y) + 1.0)) 
+		
+	def g(v):
+		if f(v) < 0.5:
+			return v
+		return (len(v) // 2) * '_'
+		
+	e = ' '.join([g(v) for v in e.split(' ')])
+	return e
+
 def choose_one(array):
 	if len(array) == 0:
 		return None
@@ -23,13 +39,14 @@ class Decider:
 
 	def get_full_word_record(self, record):
 		word = record['word']
+		print(word)
 		full_record = {
 			'chat_id'     : record['chat_id'], 
 			'delta'       : record['delta'],
 			'last'        : record['last'],
 			'word'        : word,
-			'translation' : self.SQL.select_translation(word),
-			'example'     : choose_one(self.SQL.select_examples(word))
+			'translation' : obliterate_sentence(self.SQL.select_translation(word), word),
+			'example'     : obliterate_sentence(choose_one(self.SQL.select_examples(word)), word)
 		}
 		return full_record
 

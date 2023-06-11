@@ -78,7 +78,10 @@ class Bureau:
 			
 		if not is_in_db:
 			self.SQL.add_examples(word, examples)
-		msg += '\n\n' + '\n'.join(examples)
+		if len(examples):
+			msg += '\n\n'
+			for e in examples[:min(2, len(examples))]:
+				msg = msg + '\n' + e
 		
 		self.SQL.add_word(chat_id, word, today(), default_delta)
 	

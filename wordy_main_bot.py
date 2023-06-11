@@ -70,7 +70,8 @@ def handle_call(call):
 		text = f'word {word} removed'
 	else:
 		delta = bureau.update_queue(chat_id_alt, record, verdict, mode=mode)
-		text = f'CORRECT+' + mode_to_word[mode] if verdict == 'C' else f'INCORRECT.\nanswer={word}'
+		text = 'CORRECT+' + mode_to_word[mode] if verdict == 'C' else 'INCORRECT'
+		text += f'\nanswer={word}'
 		text = text + f'\nnext check in {delta // 86400} day(s)'
 	try:
 		bot.edit_message_text(chat_id=chat_id_alt, text=text, message_id=call.message.message_id)
@@ -103,10 +104,10 @@ def user_reply_handler(message, record):
 		print(e)
 	finally:
 		bureau.unpend(chat_id_alt)
-	
+
 
 # bot.edit_message_text(chat_id=CHAT_WITH_MESSAGE, text=NEW_TEXT, message_id=MESSAGE_TO_EDIT)	
-	
+
 def examine_word(chat_id_alt, record):
 	print(f'{bf.OKCYAN}[examine_word]{bf.ENDC}: chat_id_alt={chat_id_alt}, word=' + f'{bf.OKGREEN}' + record['word'] + f'{bf.ENDC}')
 	chat_id = record['chat_id']
