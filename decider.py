@@ -39,7 +39,6 @@ class Decider:
 
 	def get_full_word_record(self, record):
 		word = record['word']
-		print(word)
 		full_record = {
 			'chat_id'     : record['chat_id'], 
 			'delta'       : record['delta'],

@@ -34,7 +34,7 @@ class SQL:
 					
 			conn.execute('''CREATE TABLE user_pending
 					(CHAT_ID_ALT   INT PRIMARY KEY    NOT NULL,
-					IS_PENDING     INT                NUT NULL);''')
+					IS_PENDING     INT                NOT NULL);''')
 
 		print("Table created successfully")
 

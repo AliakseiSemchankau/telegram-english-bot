@@ -24,7 +24,14 @@ def add_word(message):
 		bot.reply_to(message, 'please give ONE word of LATIN letters and hyphens only.\nwords with diacritics do not work (yet).')
 		return
 		
-	status, msg = bureau.inscrire_word(chat_id, word)
+	status, expl, demos = bureau.inscrire_word(chat_id, word)
+	if status == "FAILED":
+		msg = ""
+	else:
+		msg =  '\n\n' + expl
+		for d in demos:
+			msg += '\n\n' + d	
+	
 	try:
 		bot.send_message(chat_id, f'{word} {status}' + msg)
 	except:

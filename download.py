@@ -1,14 +1,16 @@
 import subprocess
 from pprint import pprint
 
+import re
+import json
+
 from constants import SCRIPT
+
+from custom_logs import log_json, log_exception
 
 import openai
 from secrets import OPEN_AI_TOKEN
 openai.api_key = OPEN_AI_TOKEN
-
-import re
-import json
 
 def contains(e, word):
 	def f(v):
@@ -48,7 +50,7 @@ def download_open(word):
 
 	msg = f'''
 		Forget previous instructions.
-		Give me explanation for the word {word} and provide two usage examples. 
+		Give me explanation for the word {word} and provide five usage examples. 
 		Better be lengthy than short. 
 		Return the JSON which has fields "explanation" and "examples". 
 		All the information regarding the word should be in one of these fields. 
@@ -64,7 +66,8 @@ def download_open(word):
 	j = completion.choices[0].message.content
 	j = max(re.findall(r'{[^{}]+}', j), key = len)
 	y = json.loads(j)
-	pprint(y)
+	
+	log_json(word, y)
 	
 	translations = [y['explanation']]
 	examples = ['• ' + e for e in y['examples']]
@@ -76,13 +79,13 @@ def download(word):
 	try:
 		translations, examples = download_open(word)
 	except Exception as e:
-		print(e)
+		log_exception(e, "download:1")
 	if len(translations):
 		return translations, examples
 	try:
 		translations, examples = download_camb(word)
 	except Exception as e:
-		print(e)
+		log_exception(e, "download:2")
 	if len(translations):
 		return translations, examples
 	return [], []

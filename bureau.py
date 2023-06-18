@@ -28,7 +28,7 @@ def generate_secret(id):
 		char = chr(ord('A') + (id % 26))
 		secret += char
 		id = id // 26
-	return secret	
+	return secret
 
 class Bureau:
 
@@ -72,23 +72,21 @@ class Bureau:
 		if len(translations) > 0:
 			if not is_in_db:
 				self.SQL.add_translation(word, translations[0])
-			msg +=  '\n\n' + translations[0]
 		else:
-			return 'FAILED', ''
+			return 'FAILED', [], []
 			
 		if not is_in_db:
 			self.SQL.add_examples(word, examples)
-		if len(examples):
-			msg += '\n\n'
-			for e in examples[:min(2, len(examples))]:
-				msg = msg + '\n' + e
 		
 		self.SQL.add_word(chat_id, word, today(), default_delta)
 	
+		expl = translations[0]
+		demos = examples[:min(2, len(examples))]
+
 		if not is_in_user_list:
-			return 'added', msg
+			return 'added', expl, demos
 		else:
-			return 'renewed', msg
+			return 'renewed', expl, demos
 			
 	def update_queue(self, chat_id, record, verdict, mode='D'):
 		delta = default_delta if (verdict == 'I' and mode == 'D') else update_delta(record['delta'], mode=mode)

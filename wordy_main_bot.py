@@ -1,11 +1,9 @@
 import random
 import time
 
-from pprint import pprint
-
 import threading
 
-from constants import bcolors as bf
+from custom_logs import log_user_word, log_user_answer, log_user_opinion, log_exception, log_user_hint
 
 import telebot
 from telebot import types
@@ -24,15 +22,26 @@ mode_to_word = {
 	'H': 'HARD',
 	'R': '🗑️'
 	}
-	
-mode_to_color = {
-	'E': bf.OKGREEN,
-	'M': bf.OKBLUE,
-	'H': bf.WARNING,
-	'R': bf.FAIL
-}	
 
+def encrypt_data(chat_id, word, handle_option, mode=None, delta=None, verdict=None):
+	data = f"cid:{chat_id}#w:{word}#h:{handle_option}"
+	if mode is not None:
+		data += f"#m:{mode}"
+	if verdict is not None:
+		data += f"#v:{verdict}"
+	if verdict is not None:
+		data += f"#d:{delta}"
+	return data
 
+def decrypt_data(data):
+	dct = {}
+	key_vals = data.split("#")
+	for kv in key_vals:
+		k, v = kv.split(':')
+		if k in ["d", "cid" ,"depth"]:
+			v = int(v)
+		dct[k] = v
+	return dct
 
 def user_secret_handler(message):
 	chat_id_alt = message.chat.id
@@ -46,24 +55,17 @@ def send_welcome(message):
 	sent_message = bot.send_message(chat_id_alt, "secret word?")
 	bot.register_next_step_handler(sent_message, user_secret_handler)
 
-def log_user_answer(chat_id_alt, user_answer, answer):
-	answer_color = bf.FAIL if user_answer != answer else bf.OKGREEN
-	print(f'{bf.OKCYAN}[examine_word]{bf.ENDC}: '
-	      f'chat_id_alt={chat_id_alt}, word={bf.OKGREEN}{answer}{bf.ENDC}, answer={answer_color}{user_answer}{bf.ENDC}')
-
-def log_user_opinion(chat_id_alt, word, mode):
-	action_color = mode_to_color[mode]
-	mode = mode_to_word[mode]
-	print(f'{bf.CWHITE}[handle_call]{bf.ENDC}: '
-	      f'chat_id_alt={chat_id_alt}, word={bf.OKGREEN}{word}{bf.ENDC}, action={action_color}{mode}{bf.ENDC}')
-
-@bot.callback_query_handler(func=lambda call: True)
+# this is to handle handle_option:opinion, or shortly h:o
+@bot.callback_query_handler(func=lambda call: 'h:o' in call.data)
 def handle_call(call):
 	chat_id_alt = call.message.chat.id
-	mode, word, delta, verdict, chat_id = call.data.split('#')
+	data = decrypt_data(call.data)
+	mode = data['m']
+	word = data['w']
+	delta = data['d']
+	verdict = data['v']
+	chat_id = data['cid']
 	log_user_opinion(chat_id_alt, word, mode)
-	delta = int(delta)
-	chat_id = int(chat_id)
 	record = {'word' : word, 'delta': delta}
 	if mode == 'R':
 		bureau.remove_word(chat_id, word)
@@ -75,17 +77,17 @@ def handle_call(call):
 		text = text + f'\nnext check in {delta // 86400} day(s)'
 	try:
 		bot.edit_message_text(chat_id=chat_id_alt, text=text, message_id=call.message.message_id)
-	except:
-		print('something went wrong...')	
+	except Exception as e:
+		log_exception(e, "handle_call:opinion")
 
-def gen_markup(data):
+def gen_opinion_markup(data):
 	keyboard = types.InlineKeyboardMarkup()
 	keyboard.row_width = 2
 	keyboard.add(
-		types.InlineKeyboardButton("EASY",   callback_data='E' + "#" + data),
-		types.InlineKeyboardButton("MEDIUM", callback_data='M' + "#" + data),
-		types.InlineKeyboardButton("HARD",   callback_data='H' + "#" + data),
-		types.InlineKeyboardButton("🗑️",     callback_data='R' + "#" + data))
+		types.InlineKeyboardButton("EASY",   callback_data='m:E' + "#" + data),
+		types.InlineKeyboardButton("MEDIUM", callback_data='m:M' + "#" + data),
+		types.InlineKeyboardButton("HARD",   callback_data='m:H' + "#" + data),
+		types.InlineKeyboardButton("🗑️",     callback_data='m:R' + "#" + data))
 	return keyboard
 
 def user_reply_handler(message, record):
@@ -97,31 +99,61 @@ def user_reply_handler(message, record):
 	verdict = 'C' if user_answer == word else 'I'
 	delta = bureau.update_queue(chat_id, record, verdict)
 	text = f'CORRECT.' if verdict == 'C' else f'INCORRECT.\nword={word}'
-	data = f"{word}#{str(delta)}#{verdict}#{chat_id}"
+	data = encrypt_data(chat_id, word, 'o', delta=delta, verdict=verdict)
 	try:
-		bot.send_message(chat_id, text, reply_markup=gen_markup(data))
+		bot.send_message(chat_id, text, reply_markup=gen_opinion_markup(data))
 	except Exception as e:
-		print(e)
+		log_exception(e, "user_reply_handler")
 	finally:
 		bureau.unpend(chat_id_alt)
 
+# this is to handle handle_option:hint, or shortly h:h
+@bot.callback_query_handler(func=lambda call: 'h:h' in call.data)
+def handle_call(call):
+	chat_id_alt = call.message.chat.id
+	data = decrypt_data(call.data)
+	word = data['w']
+	chat_id = data['cid']
+	depth = data['depth']
+	log_user_hint(chat_id_alt, word)
+	def f(i, c):
+		if i <= depth - 1 or i + depth >= len(word):
+			return c
+		return '_'
+	hint = ' '.join(f(i, c) for i, c in enumerate(word))
+	try:
+		bot.send_message(chat_id=chat_id_alt, text=hint)
+	except Exception as e:
+		log_exception(e, "handle_call:hint")
 
-# bot.edit_message_text(chat_id=CHAT_WITH_MESSAGE, text=NEW_TEXT, message_id=MESSAGE_TO_EDIT)	
+
+def gen_hint_markup(data):
+	keyboard = types.InlineKeyboardMarkup()
+	keyboard.row_width = 2
+	keyboard.add(
+		types.InlineKeyboardButton("HINT",   callback_data='h:h#depth:1#' + data),
+		types.InlineKeyboardButton("BIG HINT",   callback_data='h:h#depth:2#' + data))
+	return keyboard
+
 
 def examine_word(chat_id_alt, record):
-	print(f'{bf.OKCYAN}[examine_word]{bf.ENDC}: chat_id_alt={chat_id_alt}, word=' + f'{bf.OKGREEN}' + record['word'] + f'{bf.ENDC}')
+	word = record['word']
+	log_user_word(chat_id_alt, word)
 	chat_id = record['chat_id']
 	text = record['translation']
 	if record['example'] is not None:
 		text += '\n\n' + record['example']
+	data = encrypt_data(chat_id, word, 'h')
 	try:
-		sent_msg = bot.send_message(chat_id_alt, text)
+		sent_msg = bot.send_message(chat_id_alt, text, reply_markup=gen_hint_markup(data))
 		bot.register_next_step_handler(sent_msg, user_reply_handler, record)
 	except Exception as e:
-		print(e)	
+		log_exception(e, "examine word")
 		bureau.unpend(chat_id_alt)
 		if 'bot was blocked by the user' in str(e):
 			bureau.remove_user_alt(chat_id_alt)
+			print(f'user {chat_id_alt} blocked the bot and was removed')
+
 
 def bot_polling():
     bot.infinity_polling()
@@ -129,6 +161,7 @@ def bot_polling():
 polling_thread = threading.Thread(target=bot_polling)
 polling_thread.daemon = True
 polling_thread.start()
+
 
 while True:
 	time.sleep(5)
