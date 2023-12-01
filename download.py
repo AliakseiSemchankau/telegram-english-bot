@@ -50,7 +50,7 @@ def download_open(word):
 
 	msg = f'''
 		Forget previous instructions.
-		Give me explanation for the word {word} and provide five usage examples. 
+		Give me explanation for the word {word} and provide two usage examples. 
 		Better be lengthy than short. 
 		Return the JSON which has fields "explanation" and "examples". 
 		All the information regarding the word should be in one of these fields. 
@@ -64,6 +64,10 @@ def download_open(word):
 	)
 
 	j = completion.choices[0].message.content
+
+	with open('completion.txt', 'a') as file:
+		file.write('\n\n\n' + j)
+
 	j = max(re.findall(r'{[^{}]+}', j), key = len)
 	y = json.loads(j)
 	

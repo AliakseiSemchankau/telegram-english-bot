@@ -28,7 +28,7 @@ def log_user_opinion(chat_id_alt, word, mode):
 def log_user_word(chat_id_alt, word):
 	print(f'{bf.OKCYAN}[examine_word]{bf.ENDC}: chat_id_alt={chat_id_alt}, word=' + f'{bf.OKGREEN}' + word + f'{bf.ENDC}')
 
-def log_exception(e, func_name):
+def log_exception(ex, func_name):
 	template = "An exception of type {0} occurred. Arguments:\n{1!r}"
 	message = template.format(type(ex).__name__, ex.args)
 	print(f'{bf.FAIL}[{func_name}]{bf.ENDC}: ' + message)
